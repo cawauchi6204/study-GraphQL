@@ -1,46 +1,39 @@
-const { ApolloServer, gql } = require("apollo-server");
+const { ApolloServer } = require("apollo-server");
 const fs = require("fs");
 const path = require("path");
 
-// HackerNewsの1つ1つの投稿
-let links = [
-  {
-    id: "link-0",
-    description: "GraphQL チュートリアルをUdemyで学ぶ",
-    url: "www.udemy-graphql-tutorial.com",
-  }
-]
+const { PrismaClient } = require("@prisma/client");
+const { getUserId } = require("./utils");
 
-// ApolloServerを立ち上げるためにはスキーマの定義とリゾルバ関数が必要
+// リゾルバ関係のファイル
+const Query = require("./resolvers/Query");
+const Mutation = require("./resolvers/Mutation");
+const Link = require("./resolvers/Link");
+const User = require("./resolvers/User");
+
+const prisma = new PrismaClient();
 
 // リゾルバ関数
 // 定義した型に対して実体を設定するのがリゾルバ
 const resolvers = {
-  Query: {
-    info: () => "HackerNewsクローン",
-    feed: () => links,
-  },
-
-  Mutation: {
-    post: (parent, args) => {
-      let idCount = links.length;
-
-      const link = {
-        id: `link-${idCount++}`,
-        description: args.description,
-        url: args.url
-      };
-
-      links.push(link);
-      return link;
-    }
-  }
+  Query,
+  Mutation,
+  Link,
+  User
 }
 
 // ApolloServerをインスタンス化して使用する
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(path.join(__dirname, "schema.graphql"), "utf-8"),
-  resolvers
+  resolvers,
+  // contextはどこでも使うことができるように設定する
+  context: ({ req }) => {
+    return {
+      ...req,
+      prisma,
+      userId: (req && req.headers.authorization) ? getUserId(req) : null
+    }
+  }
 });
 
 server
