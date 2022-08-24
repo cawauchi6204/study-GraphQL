@@ -1,4 +1,6 @@
 const { ApolloServer, gql } = require("apollo-server");
+const fs = require("fs");
+const path = require("path");
 
 // HackerNewsの1つ1つの投稿
 let links = [
@@ -10,24 +12,6 @@ let links = [
 ]
 
 // ApolloServerを立ち上げるためにはスキーマの定義とリゾルバ関数が必要
-
-// GraphQL スキーマの定義
-const typeDefs = gql`
-  type Query {
-    info: String!
-    feed: [Link]!
-  }
-
-  type Mutation {
-    post(url : String!, description: String!): Link!
-  }
-
-  type Link {
-    id: ID!
-    description: String!
-    url: String!
-  }
-`
 
 // リゾルバ関数
 // 定義した型に対して実体を設定するのがリゾルバ
@@ -55,7 +39,7 @@ const resolvers = {
 
 // ApolloServerをインスタンス化して使用する
 const server = new ApolloServer({
-  typeDefs,
+  typeDefs: fs.readFileSync(path.join(__dirname, "schema.graphql"), "utf-8"),
   resolvers
 });
 
